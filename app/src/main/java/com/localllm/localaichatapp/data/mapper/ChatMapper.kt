@@ -1,214 +1,143 @@
 package com.localllm.localaichatapp.data.mapper
 
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.localllm.localaichatapp.data.local.database.entity.ChatMessageEntity
 import com.localllm.localaichatapp.data.local.database.entity.ChatSessionEntity
-import com.localllm.localaichatapp.domain.model.*
+import com.localllm.localaichatapp.domain.model.ChatMessage
+import com.localllm.localaichatapp.domain.model.ChatSender
+import com.localllm.localaichatapp.domain.model.ChatSession
+import com.localllm.localaichatapp.domain.model.ResponseMetadata
+import com.localllm.localaichatapp.domain.model.TaskType
+import javax.inject.Inject
+import javax.inject.Singleton
 
-object ChatMapper {
-    private val gson = Gson()
+@Singleton
+class ChatMapper @Inject constructor(
+    private val gson: Gson
+) {
     
-    fun ChatSessionEntity.toDomain(messages: List<ChatMessage> = emptyList()): ChatSession {
+    fun toDomain(entity: ChatSessionEntity): ChatSession {
         val taskType = try {
-            TaskType.valueOf(taskType)
+            TaskType.valueOf(entity.taskType)
         } catch (e: Exception) {
             TaskType.CHAT
         }
         
-        return ChatSession(
-            id = id,
-            title = title,
-            modelId = modelId,
-            taskType = taskType,
-            messages = messages,
-            createdAt = createdAt,
-            updatedAt = updatedAt,
-            messageCount = messageCount,
-            isBookmarked = isBookmarked,
-            tags = tags
-        )
-    }
-    
-    fun ChatSession.toEntity(): ChatSessionEntity {
-        return ChatSessionEntity(
-            id = id,
-            title = title,
-            modelId = modelId,
-            taskType = taskType.name,
-            createdAt = createdAt,
-            updatedAt = updatedAt,
-            messageCount = messageCount,
-            isBookmarked = isBookmarked,
-            tags = tags
-        )
-    }
-    
-    fun ChatMessageEntity.toDomain(): ChatMessage {
-        val metadataMap = try {
-            metadata?.let { 
-                gson.fromJson<Map<String, Any>>(it, object : TypeToken<Map<String, Any>>() {}.type)
-            }
+        val tags = try {
+            gson.fromJson(entity.tags, Array<String>::class.java).toList()
         } catch (e: Exception) {
-            null
+            emptyList()
         }
         
-        return when (messageType) {
-            "TEXT" -> TextMessage(
-                id = id,
-                timestamp = timestamp,
-                sender = sender,
-                content = content,
-                isStreaming = isStreaming,
-                tokenCount = tokenCount,
-                responseTimeMs = responseTimeMs,
-                metadata = metadataMap
-            )
-            "LOADING" -> LoadingMessage(
-                id = id,
-                timestamp = timestamp,
-                sender = sender,
-                tokenCount = tokenCount,
-                responseTimeMs = responseTimeMs
-            )
-            "ERROR" -> ErrorMessage(
-                id = id,
-                timestamp = timestamp,
-                sender = sender,
-                error = content,
-                tokenCount = tokenCount,
-                responseTimeMs = responseTimeMs
-            )
-            "IMAGE" -> ImageMessage(
-                id = id,
-                timestamp = timestamp,
-                sender = sender,
-                imageUri = imageUri ?: "",
-                caption = content.takeIf { it.isNotBlank() },
-                analysisResult = metadataMap?.get("analysisResult") as? String,
-                tokenCount = tokenCount,
-                responseTimeMs = responseTimeMs
-            )
-            "AUDIO" -> AudioMessage(
-                id = id,
-                timestamp = timestamp,
-                sender = sender,
-                audioUri = audioUri ?: "",
-                duration = metadataMap?.get("duration") as? Long,
-                transcription = metadataMap?.get("transcription") as? String,
-                analysisResult = metadataMap?.get("analysisResult") as? String,
-                tokenCount = tokenCount,
-                responseTimeMs = responseTimeMs
-            )
-            "BENCHMARK" -> {
-                val benchmarkData = metadataMap?.get("benchmark")
-                if (benchmarkData != null) {
-                    try {
-                        val benchmark = gson.fromJson(gson.toJson(benchmarkData), Benchmark::class.java)
-                        BenchmarkMessage(
-                            id = id,
-                            timestamp = timestamp,
-                            sender = sender,
-                            benchmark = benchmark,
-                            tokenCount = tokenCount,
-                            responseTimeMs = responseTimeMs
-                        )
-                    } catch (e: Exception) {
-                        ErrorMessage(id = id, timestamp = timestamp, error = "Invalid benchmark data")
-                    }
-                } else {
-                    ErrorMessage(id = id, timestamp = timestamp, error = "Missing benchmark data")
-                }
+        return ChatSession(
+            id = entity.id,
+            modelId = entity.modelId,
+            title = entity.title,
+            taskType = taskType,
+            messageCount = entity.messageCount,
+            isBookmarked = entity.isBookmarked,
+            tags = tags,
+            createdAt = entity.createdAt,
+            updatedAt = entity.updatedAt
+        )
+    }
+    
+    fun toEntity(domain: ChatSession): ChatSessionEntity {
+        return ChatSessionEntity(
+            id = domain.id,
+            modelId = domain.modelId,
+            title = domain.title,
+            taskType = domain.taskType.name,
+            messageCount = domain.messageCount,
+            isBookmarked = domain.isBookmarked,
+            tags = gson.toJson(domain.tags),
+            createdAt = domain.createdAt,
+            updatedAt = domain.updatedAt
+        )
+    }
+    
+    fun toDomain(entity: ChatMessageEntity): ChatMessage {
+        val responseMetadata = entity.metadata?.let { metadataJson ->
+            try {
+                gson.fromJson(metadataJson, ResponseMetadata::class.java)
+            } catch (e: Exception) {
+                null
             }
-            else -> TextMessage(
-                id = id,
-                timestamp = timestamp,
-                sender = sender,
-                content = content,
-                isStreaming = isStreaming,
-                tokenCount = tokenCount,
-                responseTimeMs = responseTimeMs,
-                metadata = metadataMap
+        }
+        
+        return when (entity.sender) {
+            ChatSender.USER -> ChatMessage.User(
+                id = entity.id,
+                sessionId = entity.sessionId,
+                content = entity.content,
+                timestamp = entity.timestamp,
+                imageUri = entity.imageUri,
+                audioUri = entity.audioUri
+            )
+            ChatSender.AI -> ChatMessage.Assistant(
+                id = entity.id,
+                sessionId = entity.sessionId,
+                content = entity.content,
+                timestamp = entity.timestamp,
+                metadata = responseMetadata
+            )
+            else -> ChatMessage.User(
+                id = entity.id,
+                sessionId = entity.sessionId,
+                content = entity.content,
+                timestamp = entity.timestamp,
+                imageUri = entity.imageUri,
+                audioUri = entity.audioUri
             )
         }
     }
     
-    fun ChatMessage.toEntity(sessionId: String): ChatMessageEntity {
-        return when (this) {
-            is TextMessage -> ChatMessageEntity(
-                id = id,
-                sessionId = sessionId,
-                content = content,
-                sender = sender,
-                timestamp = timestamp,
+    fun toEntity(domain: ChatMessage): ChatMessageEntity {
+        return when (domain) {
+            is ChatMessage.User -> ChatMessageEntity(
+                id = domain.id,
+                sessionId = domain.sessionId,
                 messageType = "TEXT",
-                isStreaming = isStreaming,
-                metadata = metadata?.let { gson.toJson(it) },
-                tokenCount = tokenCount,
-                responseTimeMs = responseTimeMs
+                content = domain.content,
+                sender = ChatSender.USER,
+                timestamp = domain.timestamp,
+                isStreaming = false,
+                imageUri = domain.imageUri,
+                audioUri = domain.audioUri,
+                metadata = null,
+                tokenCount = null,
+                responseTimeMs = null
             )
-            is LoadingMessage -> ChatMessageEntity(
-                id = id,
-                sessionId = sessionId,
-                content = "",
-                sender = sender,
-                timestamp = timestamp,
-                messageType = "LOADING",
-                tokenCount = tokenCount,
-                responseTimeMs = responseTimeMs
-            )
-            is ErrorMessage -> ChatMessageEntity(
-                id = id,
-                sessionId = sessionId,
-                content = error,
-                sender = sender,
-                timestamp = timestamp,
-                messageType = "ERROR",
-                tokenCount = tokenCount,
-                responseTimeMs = responseTimeMs
-            )
-            is ImageMessage -> ChatMessageEntity(
-                id = id,
-                sessionId = sessionId,
-                content = caption ?: "",
-                sender = sender,
-                timestamp = timestamp,
-                messageType = "IMAGE",
-                imageUri = imageUri,
-                metadata = gson.toJson(mapOf(
-                    "analysisResult" to analysisResult
-                ).filterValues { it != null }),
-                tokenCount = tokenCount,
-                responseTimeMs = responseTimeMs
-            )
-            is AudioMessage -> ChatMessageEntity(
-                id = id,
-                sessionId = sessionId,
-                content = transcription ?: "",
-                sender = sender,
-                timestamp = timestamp,
-                messageType = "AUDIO",
-                audioUri = audioUri,
-                metadata = gson.toJson(mapOf(
-                    "duration" to duration,
-                    "transcription" to transcription,
-                    "analysisResult" to analysisResult
-                ).filterValues { it != null }),
-                tokenCount = tokenCount,
-                responseTimeMs = responseTimeMs
-            )
-            is BenchmarkMessage -> ChatMessageEntity(
-                id = id,
-                sessionId = sessionId,
-                content = "Benchmark Results",
-                sender = sender,
-                timestamp = timestamp,
-                messageType = "BENCHMARK",
-                metadata = gson.toJson(mapOf("benchmark" to benchmark)),
-                tokenCount = tokenCount,
-                responseTimeMs = responseTimeMs
+            is ChatMessage.Assistant -> ChatMessageEntity(
+                id = domain.id,
+                sessionId = domain.sessionId,
+                messageType = "TEXT",
+                content = domain.content,
+                sender = ChatSender.AI,
+                timestamp = domain.timestamp,
+                isStreaming = false,
+                imageUri = null,
+                audioUri = null,
+                metadata = domain.metadata?.let { gson.toJson(it) },
+                tokenCount = domain.metadata?.tokenCount,
+                responseTimeMs = domain.metadata?.responseTimeMs?.toLong()
             )
         }
     }
-}
+    
+    fun toDomainList(entities: List<ChatSessionEntity>): List<ChatSession> {
+        return entities.map { toDomain(it) }
+    }
+    
+    fun toEntityList(domains: List<ChatSession>): List<ChatSessionEntity> {
+        return domains.map { toEntity(it) }
+    }
+    
+    fun messagesToDomainList(entities: List<ChatMessageEntity>): List<ChatMessage> {
+        return entities.map { toDomain(it) }
+    }
+    
+    fun messagesToEntityList(domains: List<ChatMessage>): List<ChatMessageEntity> {
+        return domains.map { toEntity(it) }
+    }
 }

@@ -1,5 +1,8 @@
-package com.localllm.localaichatapp.presentation.chat
+package com.localllm.localaichatapp.presentation.askimage
 
+import android.content.Context
+import android.net.Uri
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.localllm.localaichatapp.domain.model.ChatMessage
@@ -12,23 +15,37 @@ import com.localllm.localaichatapp.domain.repository.ModelRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.*
 import javax.inject.Inject
 
+data class AskImageUiState(
+    val messages: List<ChatMessage> = emptyList(),
+    val inputText: String = "",
+    val selectedImageUri: Uri? = null,
+    val isLoading: Boolean = false,
+    val isStreaming: Boolean = false,
+    val modelName: String = "",
+    val sessionTitle: String = "",
+    val currentSession: ChatSession? = null,
+    val currentModel: Model? = null,
+    val error: String? = null
+)
 
 @HiltViewModel
-class ChatViewModel @Inject constructor(
+class AskImageViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
     private val modelRepository: ModelRepository,
     private val aiInferenceRepository: AiInferenceRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ChatUiState())
-    val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(AskImageUiState())
+    val uiState: StateFlow<AskImageUiState> = _uiState.asStateFlow()
 
     private var currentSessionId: String? = null
+    private var pendingCameraUri: Uri? = null
 
-    fun initializeChat(modelId: String) {
+    fun initializeSession(modelId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             
@@ -45,11 +62,11 @@ class ChatViewModel @Inject constructor(
                     return@launch
                 }
 
-                // Create new chat session
+                // Create new session for image analysis
                 val session = chatRepository.createSession(
                     modelId = modelId,
-                    title = "New Chat", // Will be updated with first message
-                    taskType = TaskType.CHAT
+                    title = "Image Analysis",
+                    taskType = TaskType.ASK_IMAGE
                 )
                 currentSessionId = session.id
 
@@ -70,7 +87,7 @@ class ChatViewModel @Inject constructor(
                 _uiState.update { 
                     it.copy(
                         isLoading = false,
-                        error = "Failed to initialize chat: ${e.message}"
+                        error = "Failed to initialize session: ${e.message}"
                     )
                 }
             }
@@ -90,12 +107,39 @@ class ChatViewModel @Inject constructor(
         _uiState.update { it.copy(inputText = text) }
     }
 
+    fun selectImage(uri: Uri) {
+        _uiState.update { it.copy(selectedImageUri = uri) }
+    }
+
+    fun clearSelectedImage() {
+        _uiState.update { it.copy(selectedImageUri = null) }
+    }
+
+    fun createImageUri(context: Context): Uri {
+        val imageFile = File(context.cacheDir, "camera_image_${System.currentTimeMillis()}.jpg")
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            imageFile
+        )
+        pendingCameraUri = uri
+        return uri
+    }
+
+    fun onCameraImageCaptured() {
+        pendingCameraUri?.let { uri ->
+            selectImage(uri)
+            pendingCameraUri = null
+        }
+    }
+
     fun sendMessage() {
         val currentState = _uiState.value
         val inputText = currentState.inputText.trim()
+        val imageUri = currentState.selectedImageUri
         val sessionId = currentSessionId
 
-        if (inputText.isBlank() || sessionId == null || currentState.isStreaming) {
+        if ((inputText.isBlank() && imageUri == null) || sessionId == null || currentState.isStreaming) {
             return
         }
 
@@ -104,24 +148,32 @@ class ChatViewModel @Inject constructor(
                 _uiState.update { 
                     it.copy(
                         inputText = "",
+                        selectedImageUri = null,
                         isStreaming = true
                     )
                 }
 
-                // Create and save user message
+                // Create and save user message with image
                 val userMessage = ChatMessage.User(
                     id = UUID.randomUUID().toString(),
                     sessionId = sessionId,
-                    content = inputText,
-                    timestamp = System.currentTimeMillis()
+                    content = inputText.ifBlank { "Analyze this image" },
+                    timestamp = System.currentTimeMillis(),
+                    imageUri = imageUri?.toString()
                 )
 
                 chatRepository.addMessage(sessionId, userMessage)
 
                 // Update session title if it's the first message
                 if (currentState.messages.isEmpty()) {
+                    val title = if (inputText.isNotBlank()) {
+                        inputText.take(50).trim()
+                    } else {
+                        "Image Analysis"
+                    }
+                    
                     val updatedSession = currentState.currentSession?.copy(
-                        title = inputText.take(50).trim(),
+                        title = title,
                         updatedAt = System.currentTimeMillis()
                     )
                     updatedSession?.let { 
@@ -135,8 +187,8 @@ class ChatViewModel @Inject constructor(
                     }
                 }
 
-                // Generate AI response
-                generateAiResponse(sessionId, inputText)
+                // Generate AI response for image analysis
+                generateImageAnalysis(sessionId, inputText, imageUri)
 
             } catch (e: Exception) {
                 _uiState.update { 
@@ -149,7 +201,7 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    private suspend fun generateAiResponse(sessionId: String, userInput: String) {
+    private suspend fun generateImageAnalysis(sessionId: String, userInput: String, imageUri: Uri?) {
         try {
             val model = _uiState.value.currentModel ?: return
             val conversationHistory = _uiState.value.messages
@@ -166,11 +218,12 @@ class ChatViewModel @Inject constructor(
 
             chatRepository.addMessage(sessionId, initialAssistantMessage)
 
-            // Generate response with streaming
-            val responseFlow = aiInferenceRepository.generateChatResponse(
+            // Generate response with image analysis
+            val responseFlow = aiInferenceRepository.generateImageAnalysis(
                 model = model,
                 messages = conversationHistory,
-                userInput = userInput
+                userInput = userInput.ifBlank { "Analyze this image" },
+                imageUri = imageUri
             )
 
             var fullContent = ""
@@ -192,7 +245,7 @@ class ChatViewModel @Inject constructor(
             _uiState.update { 
                 it.copy(
                     isStreaming = false,
-                    error = "Failed to generate response: ${e.message}"
+                    error = "Failed to analyze image: ${e.message}"
                 )
             }
         }
@@ -202,7 +255,7 @@ class ChatViewModel @Inject constructor(
         _uiState.update { it.copy(error = null) }
     }
 
-    fun clearChat() {
+    fun clearSession() {
         viewModelScope.launch {
             currentSessionId?.let { sessionId ->
                 try {
@@ -210,12 +263,12 @@ class ChatViewModel @Inject constructor(
                     _uiState.update { 
                         it.copy(
                             messages = emptyList(),
-                            sessionTitle = "New Chat"
+                            sessionTitle = "Image Analysis"
                         )
                     }
                 } catch (e: Exception) {
                     _uiState.update { 
-                        it.copy(error = "Failed to clear chat: ${e.message}")
+                        it.copy(error = "Failed to clear session: ${e.message}")
                     }
                 }
             }

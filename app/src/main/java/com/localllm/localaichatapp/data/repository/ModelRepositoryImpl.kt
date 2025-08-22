@@ -2,14 +2,17 @@ package com.localllm.localaichatapp.data.repository
 
 import android.content.Context
 import com.localllm.localaichatapp.data.local.database.dao.ModelDao
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.localllm.localaichatapp.data.mapper.ModelMapper
 import com.localllm.localaichatapp.data.remote.ModelApiService
 import com.localllm.localaichatapp.data.remote.ModelDownloadManager
 import com.localllm.localaichatapp.domain.model.Model
+import com.localllm.localaichatapp.domain.model.ModelStatus
 import com.localllm.localaichatapp.domain.model.TaskType
 import com.localllm.localaichatapp.domain.repository.ModelRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,7 +22,7 @@ class ModelRepositoryImpl @Inject constructor(
     private val modelMapper: ModelMapper,
     private val modelApiService: ModelApiService,
     private val downloadManager: ModelDownloadManager,
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) : ModelRepository {
     
     override fun getAllModels(): Flow<List<Model>> {
@@ -139,7 +142,9 @@ class ModelRepositoryImpl @Inject constructor(
                 downloadUrl = model.downloadUrl,
                 modelId = modelId,
                 onProgress = { progress ->
-                    updateDownloadStatus(modelId, false, true, progress, null)
+                    runBlocking {
+                        updateDownloadStatus(modelId, false, true, progress, null)
+                    }
                     onProgress(progress)
                 }
             )
@@ -186,5 +191,16 @@ class ModelRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             false
         }
+    }
+    
+    override suspend fun updateModelStatus(modelId: String, status: ModelStatus) {
+        modelDao.updateModelStatus(modelId, status.name)
+    }
+    
+    override suspend fun setPrimaryModel(modelId: String) {
+        // First, unset all primary models
+        modelDao.unsetAllPrimaryModels()
+        // Then set the specified model as primary
+        modelDao.setPrimaryModel(modelId)
     }
 }

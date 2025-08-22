@@ -26,7 +26,7 @@ import com.localllm.localaichatapp.data.local.database.converter.Converters
         PromptTemplateEntity::class,
         BenchmarkEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -124,6 +124,14 @@ abstract class ChatDatabase : RoomDatabase() {
             }
         }
         
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add missing columns to models table
+                database.execSQL("ALTER TABLE models ADD COLUMN status TEXT NOT NULL DEFAULT 'AVAILABLE'")
+                database.execSQL("ALTER TABLE models ADD COLUMN isPrimary INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+        
         fun getDatabase(context: Context): ChatDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -131,7 +139,7 @@ abstract class ChatDatabase : RoomDatabase() {
                     ChatDatabase::class.java,
                     "chat_database"
                 )
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .fallbackToDestructiveMigration() // Only for development
                 .build()
                 INSTANCE = instance

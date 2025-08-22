@@ -22,11 +22,14 @@ data class ChatSession(
     
     val preview: String
         get() = when (val last = lastMessage) {
-            is TextMessage -> last.content.take(100)
-            is ImageMessage -> "📸 Image: ${last.caption ?: "No caption"}"
-            is AudioMessage -> "🎵 Audio: ${last.transcription ?: "No transcription"}"
-            is ErrorMessage -> "❌ Error: ${last.error}"
-            is BenchmarkMessage -> "📊 Benchmark results"
+            is ChatMessage.User -> {
+                when {
+                    last.imageUri != null -> "📸 Image: ${last.content.take(50)}"
+                    last.audioUri != null -> "🎵 Audio: ${last.content.take(50)}"
+                    else -> last.content.take(100)
+                }
+            }
+            is ChatMessage.Assistant -> last.content.take(100)
             else -> "Empty conversation"
         }
 }
@@ -36,37 +39,3 @@ data class StreamingResponse(
     val isComplete: Boolean,
     val metadata: ResponseMetadata? = null
 )
-
-data class ResponseMetadata(
-    val timeToFirstToken: Long? = null,
-    val tokensPerSecond: Float? = null,
-    val totalInputTokens: Int? = null,
-    val totalOutputTokens: Int? = null,
-    val latencyMs: Long? = null,
-    val memoryUsageMb: Float? = null,
-    val cpuUsagePercent: Float? = null,
-    val batteryLevel: Float? = null
-) {
-    fun toBenchmark(
-        modelId: String,
-        sessionId: String,
-        taskType: TaskType
-    ): Benchmark? {
-        return if (timeToFirstToken != null && tokensPerSecond != null && latencyMs != null) {
-            Benchmark(
-                id = java.util.UUID.randomUUID().toString(),
-                modelId = modelId,
-                sessionId = sessionId,
-                taskType = taskType,
-                ttftMs = timeToFirstToken,
-                decodeSpeedTokensPerSecond = tokensPerSecond,
-                totalLatencyMs = latencyMs,
-                inputTokenCount = totalInputTokens ?: 0,
-                outputTokenCount = totalOutputTokens ?: 0,
-                memoryUsageMb = memoryUsageMb ?: 0f,
-                cpuUsagePercent = cpuUsagePercent ?: 0f,
-                batteryLevel = batteryLevel
-            )
-        } else null
-    }
-}

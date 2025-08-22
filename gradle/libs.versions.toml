@@ -104,7 +104,8 @@ androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycl
 androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
 
 # AI Edge (For local ML)
-google-ai-edge = { group = "com.google.ai.edge.litert", name = "litert-android", version.ref = "aiEdge" }
+# Commented out until real AI Edge integration - use mock implementations for now
+# google-ai-edge = { group = "com.google.ai.edge.litert", name = "litert-android", version.ref = "aiEdge" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

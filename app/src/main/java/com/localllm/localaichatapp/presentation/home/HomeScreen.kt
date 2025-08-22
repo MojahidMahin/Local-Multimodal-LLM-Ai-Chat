@@ -61,11 +61,12 @@ fun HomeScreen(
             modifier = Modifier.padding(bottom = 16.dp)
         )
         
+        val taskItems = getTaskItems()
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
-            items(getTaskItems()) { taskItem ->
+            items(taskItems) { taskItem ->
                 TaskCard(
                     taskItem = taskItem,
                     onTaskClick = { taskType ->
@@ -151,7 +152,7 @@ private fun WelcomeSection() {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp),
-            horizontalAlignment = Alignment.CenterVertically
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = "🤖 Welcome to AI Gallery",
@@ -185,10 +186,7 @@ private fun TaskCard(
         colors = CardDefaults.cardColors(
             containerColor = taskItem.color.copy(alpha = 0.1f)
         ),
-        border = CardDefaults.outlinedCardBorder().copy(
-            brush = null,
-            width = 1.dp
-        )
+        border = CardDefaults.outlinedCardBorder()
     ) {
         Row(
             modifier = Modifier
@@ -226,7 +224,7 @@ private fun TaskCard(
 
 @Composable
 private fun RecentSessionsSection(
-    sessions: List<RecentSession>,
+    sessions: List<com.localllm.localaichatapp.domain.model.ChatSession>,
     onSessionClick: (String, String) -> Unit
 ) {
     Column {
@@ -242,7 +240,7 @@ private fun RecentSessionsSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
-                onClick = { onSessionClick(session.id, session.taskType) }
+                onClick = { onSessionClick(session.id, session.taskType.name) }
             ) {
                 Row(
                     modifier = Modifier
@@ -251,9 +249,9 @@ private fun RecentSessionsSection(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = getTaskIcon(session.taskType),
-                        contentDescription = session.taskType,
-                        tint = getTaskColor(session.taskType),
+                        imageVector = getTaskIcon(session.taskType.name),
+                        contentDescription = session.taskType.name,
+                        tint = getTaskColor(session.taskType.name),
                         modifier = Modifier.size(24.dp)
                     )
                     
@@ -287,12 +285,6 @@ private data class TaskItem(
     val color: androidx.compose.ui.graphics.Color
 )
 
-private data class RecentSession(
-    val id: String,
-    val title: String,
-    val taskType: String,
-    val preview: String
-)
 
 @Composable
 private fun getTaskItems(): List<TaskItem> {

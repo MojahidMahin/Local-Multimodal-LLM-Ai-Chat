@@ -27,5 +27,5 @@ data class ChatSessionEntity(
     val updatedAt: Long = System.currentTimeMillis(),
     val messageCount: Int = 0,
     val isBookmarked: Boolean = false,
-    val tags: List<String> = emptyList()
+    val tags: String = "[]"
 )

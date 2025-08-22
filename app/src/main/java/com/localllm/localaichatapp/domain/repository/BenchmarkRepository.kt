@@ -17,5 +17,6 @@ interface BenchmarkRepository {
     suspend fun getAverageLatency(modelId: String, taskType: TaskType): Float?
     suspend fun getBenchmarkSummary(modelId: String, taskType: TaskType): BenchmarkSummary?
     suspend fun deleteOldBenchmarks(cutoffTime: Long)
+    suspend fun deleteBenchmarksByModel(modelId: String)
     suspend fun deleteAllBenchmarks()
 }

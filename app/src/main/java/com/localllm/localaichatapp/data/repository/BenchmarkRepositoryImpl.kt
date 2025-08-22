@@ -93,6 +93,10 @@ class BenchmarkRepositoryImpl @Inject constructor(
         benchmarkDao.deleteOldBenchmarks(cutoffTime)
     }
     
+    override suspend fun deleteBenchmarksByModel(modelId: String) {
+        benchmarkDao.deleteBenchmarksByModel(modelId)
+    }
+    
     override suspend fun deleteAllBenchmarks() {
         benchmarkDao.deleteAllBenchmarks()
     }

@@ -60,4 +60,13 @@ interface ModelDao {
     
     @Query("SELECT SUM(size) FROM models WHERE isDownloaded = 1")
     suspend fun getTotalDownloadedSize(): Long?
+    
+    @Query("UPDATE models SET status = :status WHERE id = :modelId")
+    suspend fun updateModelStatus(modelId: String, status: String)
+    
+    @Query("UPDATE models SET isPrimary = 0")
+    suspend fun unsetAllPrimaryModels()
+    
+    @Query("UPDATE models SET isPrimary = 1 WHERE id = :modelId")
+    suspend fun setPrimaryModel(modelId: String)
 }

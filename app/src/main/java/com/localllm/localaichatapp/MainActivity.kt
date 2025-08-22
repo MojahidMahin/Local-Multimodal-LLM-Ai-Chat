@@ -9,12 +9,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.localllm.localaichatapp.presentation.chat.ChatScreen
-import com.localllm.localaichatapp.presentation.models.ModelManagementScreen
-import com.localllm.localaichatapp.ui.theme.LocalAiChatAppTheme
+import com.localllm.localaichatapp.presentation.theme.LocalAiChatAppTheme
+import com.localllm.localaichatapp.presentation.navigation.LocalAiChatAppNavigation
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -39,24 +36,8 @@ class MainActivity : ComponentActivity() {
 fun AiChatApp() {
     val navController = rememberNavController()
     
-    NavHost(
+    LocalAiChatAppNavigation(
         navController = navController,
-        startDestination = "chat"
-    ) {
-        composable("chat") {
-            ChatScreen(
-                onNavigateToModels = {
-                    navController.navigate("models")
-                }
-            )
-        }
-        
-        composable("models") {
-            ModelManagementScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
-            )
-        }
-    }
+        modifier = Modifier.fillMaxSize()
+    )
 }

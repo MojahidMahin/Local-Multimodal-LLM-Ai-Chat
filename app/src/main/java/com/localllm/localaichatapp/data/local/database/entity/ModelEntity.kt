@@ -17,6 +17,8 @@ data class ModelEntity(
     val isDownloaded: Boolean = false,
     val isDownloading: Boolean = false,
     val downloadProgress: Float = 0f,
+    val status: String = "AVAILABLE", // AVAILABLE, DOWNLOADING, PAUSED, DOWNLOADED, ERROR
+    val isPrimary: Boolean = false,
     val supportedTasks: List<String>, // Chat, Image, Audio, PromptLab
     val parameters: String? = null, // JSON string of model parameters
     val createdAt: Long = System.currentTimeMillis(),

@@ -1,5 +1,9 @@
 package com.localllm.localaichatapp.domain.repository
 
+import android.net.Uri
+import com.localllm.localaichatapp.domain.model.ChatMessage
+import com.localllm.localaichatapp.domain.model.Model
+import com.localllm.localaichatapp.domain.model.PromptTemplate
 import com.localllm.localaichatapp.domain.model.StreamingResponse
 import com.localllm.localaichatapp.domain.model.TaskType
 import kotlinx.coroutines.flow.Flow
@@ -11,6 +15,33 @@ interface AiInferenceRepository {
         taskType: TaskType = TaskType.CHAT,
         conversationHistory: List<String> = emptyList(),
         systemPrompt: String? = null
+    ): Flow<StreamingResponse>
+    
+    // New methods for ViewModels
+    suspend fun generateChatResponse(
+        model: Model,
+        messages: List<ChatMessage>,
+        userInput: String
+    ): Flow<StreamingResponse>
+    
+    suspend fun generateImageAnalysis(
+        model: Model,
+        messages: List<ChatMessage>,
+        userInput: String,
+        imageUri: Uri?
+    ): Flow<StreamingResponse>
+    
+    suspend fun generateAudioAnalysis(
+        model: Model,
+        messages: List<ChatMessage>,
+        userInput: String,
+        audioUri: Uri?
+    ): Flow<StreamingResponse>
+    
+    suspend fun generatePromptLabResponse(
+        model: Model,
+        prompt: String,
+        template: PromptTemplate?
     ): Flow<StreamingResponse>
     
     suspend fun generateResponseWithImage(

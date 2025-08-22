@@ -1,8 +1,7 @@
 package com.localllm.localaichatapp.data.repository
 
 import com.localllm.localaichatapp.data.local.database.dao.ChatDao
-import com.localllm.localaichatapp.data.mapper.ChatMapper.toDomain
-import com.localllm.localaichatapp.data.mapper.ChatMapper.toEntity
+import com.localllm.localaichatapp.data.mapper.ChatMapper
 import com.localllm.localaichatapp.domain.model.ChatMessage
 import com.localllm.localaichatapp.domain.model.ChatSession
 import com.localllm.localaichatapp.domain.model.TaskType
@@ -16,7 +15,8 @@ import javax.inject.Singleton
 
 @Singleton
 class ChatRepositoryImpl @Inject constructor(
-    private val chatDao: ChatDao
+    private val chatDao: ChatDao,
+    private val chatMapper: ChatMapper
 ) : ChatRepository {
     
     override suspend fun createSession(modelId: String, title: String, taskType: TaskType): ChatSession {
@@ -30,55 +30,48 @@ class ChatRepositoryImpl @Inject constructor(
             updatedAt = System.currentTimeMillis()
         )
         
-        chatDao.insertSession(session.toEntity())
+        chatDao.insertSession(chatMapper.toEntity(session))
         return session
     }
     
     override suspend fun getSession(sessionId: String): ChatSession? {
         val sessionEntity = chatDao.getSession(sessionId) ?: return null
-        val messages = chatDao.getMessagesForSession(sessionId)
-            .map { messageEntities ->
-                messageEntities.map { it.toDomain() }
-            }
-        
-        // For immediate access, we need to get messages synchronously
-        // This could be optimized with a single query with JOIN
-        return sessionEntity.toDomain()
+        return chatMapper.toDomain(sessionEntity)
     }
     
     override fun getAllSessions(): Flow<List<ChatSession>> {
         return chatDao.getAllSessions().map { sessionEntities ->
-            sessionEntities.map { it.toDomain() }
+            chatMapper.toDomainList(sessionEntities)
         }
     }
     
     override fun getSessionsByTaskType(taskType: TaskType): Flow<List<ChatSession>> {
         return chatDao.getSessionsByTaskType(taskType.name).map { sessionEntities ->
-            sessionEntities.map { it.toDomain() }
+            chatMapper.toDomainList(sessionEntities)
         }
     }
     
     override fun getSessionsByModel(modelId: String): Flow<List<ChatSession>> {
         return chatDao.getSessionsByModel(modelId).map { sessionEntities ->
-            sessionEntities.map { it.toDomain() }
+            chatMapper.toDomainList(sessionEntities)
         }
     }
     
     override fun getBookmarkedSessions(): Flow<List<ChatSession>> {
         return chatDao.getBookmarkedSessions().map { sessionEntities ->
-            sessionEntities.map { it.toDomain() }
+            chatMapper.toDomainList(sessionEntities)
         }
     }
     
     override fun searchSessions(query: String): Flow<List<ChatSession>> {
-        return chatDao.searchSessions(query).map { sessionEntities ->
-            sessionEntities.map { it.toDomain() }
+        return chatDao.searchSessions("%$query%").map { sessionEntities ->
+            chatMapper.toDomainList(sessionEntities)
         }
     }
     
     override suspend fun addMessage(sessionId: String, message: ChatMessage): Result<Unit> {
         return try {
-            chatDao.insertMessage(message.toEntity(sessionId))
+            chatDao.insertMessage(chatMapper.toEntity(message))
             
             // Update session's updatedAt timestamp
             val session = chatDao.getSession(sessionId)
@@ -96,11 +89,7 @@ class ChatRepositoryImpl @Inject constructor(
     
     override suspend fun updateMessage(messageId: String, updatedMessage: ChatMessage): Result<Unit> {
         return try {
-            // Get the current message to find its sessionId
-            val currentMessage = chatDao.getMessage(messageId)
-            if (currentMessage != null) {
-                chatDao.updateMessage(updatedMessage.toEntity(currentMessage.sessionId))
-            }
+            chatDao.updateMessage(chatMapper.toEntity(updatedMessage))
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -109,7 +98,7 @@ class ChatRepositoryImpl @Inject constructor(
     
     override suspend fun updateSession(session: ChatSession): Result<Unit> {
         return try {
-            chatDao.updateSession(session.toEntity())
+            chatDao.updateSession(chatMapper.toEntity(session))
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -125,18 +114,18 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
     
-    override suspend fun deleteMessage(messageId: String): Result<Unit> {
+    override suspend fun deleteSession(sessionId: String): Result<Unit> {
         return try {
-            chatDao.deleteMessage(messageId)
+            chatDao.deleteSession(sessionId)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
     
-    override suspend fun deleteSession(sessionId: String): Result<Unit> {
+    override suspend fun deleteMessage(messageId: String): Result<Unit> {
         return try {
-            chatDao.deleteSession(sessionId)
+            chatDao.deleteMessage(messageId)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -153,37 +142,32 @@ class ChatRepositoryImpl @Inject constructor(
     }
     
     override fun observeSession(sessionId: String): Flow<ChatSession?> {
-        return combine(
-            chatDao.observeSession(sessionId),
-            chatDao.getMessagesForSession(sessionId)
-        ) { sessionEntity, messageEntities ->
-            sessionEntity?.toDomain(
-                messages = messageEntities.map { it.toDomain() }
-            )
+        return chatDao.observeSession(sessionId).map { sessionEntity ->
+            sessionEntity?.let { chatMapper.toDomain(it) }
         }
     }
     
     override fun observeMessages(sessionId: String): Flow<List<ChatMessage>> {
         return chatDao.getMessagesForSession(sessionId).map { messageEntities ->
-            messageEntities.map { it.toDomain() }
+            chatMapper.messagesToDomainList(messageEntities)
         }
     }
     
     override fun getMessagesByType(sessionId: String, messageType: String): Flow<List<ChatMessage>> {
         return chatDao.getMessagesByType(sessionId, messageType).map { messageEntities ->
-            messageEntities.map { it.toDomain() }
+            chatMapper.messagesToDomainList(messageEntities)
         }
     }
     
     override fun getAllImageMessages(): Flow<List<ChatMessage>> {
         return chatDao.getAllImageMessages().map { messageEntities ->
-            messageEntities.map { it.toDomain() }
+            chatMapper.messagesToDomainList(messageEntities)
         }
     }
     
     override fun getAllAudioMessages(): Flow<List<ChatMessage>> {
         return chatDao.getAllAudioMessages().map { messageEntities ->
-            messageEntities.map { it.toDomain() }
+            chatMapper.messagesToDomainList(messageEntities)
         }
     }
     

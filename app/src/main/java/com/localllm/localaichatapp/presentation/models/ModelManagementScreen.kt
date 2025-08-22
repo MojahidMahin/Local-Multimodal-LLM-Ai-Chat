@@ -161,7 +161,7 @@ fun ModelManagementScreen(
             text = {
                 Text(
                     "Are you sure you want to delete ${modelToDelete?.name}? " +
-                    "This will free up ${formatFileSize(modelToDelete?.modelSize ?: 0L)} of storage."
+                    "This will free up ${formatFileSize(modelToDelete?.size ?: 0L)} of storage."
                 )
             },
             confirmButton = {

@@ -1,15 +1,14 @@
 package com.localllm.localaichatapp.domain.usecase
 
 import com.localllm.localaichatapp.domain.model.ChatMessage
-import com.localllm.localaichatapp.domain.model.ChatSender
-import com.localllm.localaichatapp.domain.model.LoadingMessage
 import com.localllm.localaichatapp.domain.model.StreamingResponse
-import com.localllm.localaichatapp.domain.model.TextMessage
+import com.localllm.localaichatapp.domain.model.TaskType
 import com.localllm.localaichatapp.domain.repository.AiInferenceRepository
 import com.localllm.localaichatapp.domain.repository.ChatRepository
 import com.localllm.localaichatapp.domain.repository.ModelRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import java.util.UUID
 import javax.inject.Inject
 
 class SendMessageUseCase @Inject constructor(
@@ -20,76 +19,106 @@ class SendMessageUseCase @Inject constructor(
     suspend operator fun invoke(
         sessionId: String,
         message: String,
-        imageUri: String? = null
+        imageUri: String? = null,
+        audioUri: String? = null
     ): Flow<StreamingResponse> = flow {
         try {
             val session = chatRepository.getSession(sessionId)
                 ?: throw IllegalArgumentException("Session not found")
             
-            val userMessage = TextMessage(
+            // Create user message
+            val userMessage = ChatMessage.User(
+                id = UUID.randomUUID().toString(),
+                sessionId = sessionId,
                 content = message,
-                sender = ChatSender.USER
+                timestamp = System.currentTimeMillis(),
+                imageUri = imageUri,
+                audioUri = audioUri
             )
             
+            // Add user message to repository
             chatRepository.addMessage(sessionId, userMessage)
             
-            val loadingMessage = LoadingMessage()
-            chatRepository.addMessage(sessionId, loadingMessage)
-            
+            // Check if model is ready
             if (!modelRepository.isModelReady(session.modelId)) {
                 throw IllegalStateException("Model ${session.modelId} is not ready")
             }
             
-            val conversationHistory = session.messages
-                .filterIsInstance<TextMessage>()
-                .map { "${it.sender.name}: ${it.content}" }
+            // Get conversation history
+            val messages = chatRepository.observeMessages(sessionId)
+            val conversationHistory = session.messages.map { it.content }
             
-            val responseFlow = if (imageUri != null) {
-                aiInferenceRepository.generateResponseWithImage(
-                    session.modelId,
-                    message,
-                    imageUri,
-                    conversationHistory
-                )
-            } else {
-                aiInferenceRepository.generateResponse(
-                    session.modelId,
-                    message,
-                    conversationHistory
-                )
+            // Generate AI response based on input type
+            val responseFlow = when {
+                imageUri != null -> {
+                    aiInferenceRepository.generateResponseWithImage(
+                        session.modelId,
+                        message,
+                        imageUri,
+                        session.taskType,
+                        conversationHistory
+                    )
+                }
+                audioUri != null -> {
+                    aiInferenceRepository.generateResponseWithAudio(
+                        session.modelId,
+                        message,
+                        audioUri,
+                        session.taskType,
+                        conversationHistory
+                    )
+                }
+                else -> {
+                    aiInferenceRepository.generateResponse(
+                        session.modelId,
+                        message,
+                        session.taskType,
+                        conversationHistory
+                    )
+                }
             }
             
             var currentResponse = ""
             var aiMessageId: String? = null
             
+            // Process streaming response
             responseFlow.collect { streamingResponse ->
                 currentResponse += streamingResponse.content
                 
-                if (aiMessageId == null) {
-                    val aiMessage = TextMessage(
+                if (aiMessageId == null && streamingResponse.content.isNotEmpty()) {
+                    // Create new AI message
+                    val aiMessage = ChatMessage.Assistant(
+                        id = UUID.randomUUID().toString(),
+                        sessionId = sessionId,
                         content = currentResponse,
-                        sender = ChatSender.AI,
-                        isStreaming = !streamingResponse.isComplete
+                        timestamp = System.currentTimeMillis(),
+                        metadata = streamingResponse.metadata
                     )
                     aiMessageId = aiMessage.id
                     chatRepository.addMessage(sessionId, aiMessage)
-                } else {
-                    val updatedMessage = TextMessage(
+                } else if (aiMessageId != null) {
+                    // Update existing AI message
+                    val updatedMessage = ChatMessage.Assistant(
                         id = aiMessageId!!,
+                        sessionId = sessionId,
                         content = currentResponse,
-                        sender = ChatSender.AI,
-                        isStreaming = !streamingResponse.isComplete
+                        timestamp = System.currentTimeMillis(),
+                        metadata = streamingResponse.metadata
                     )
-                    chatRepository.updateMessage(sessionId, aiMessageId!!, updatedMessage)
+                    chatRepository.updateMessage(aiMessageId!!, updatedMessage)
                 }
                 
                 emit(streamingResponse)
             }
             
         } catch (e: Exception) {
-            val errorMessage = TextMessage(
+            // Create error message
+            val errorMessage = ChatMessage.Assistant(
+                id = UUID.randomUUID().toString(),
+                sessionId = sessionId,
                 content = "Error: ${e.message}",
-                sender = ChatSender.SYSTEM
+                timestamp = System.currentTimeMillis(),
+                metadata = null
             )
             chatRepository.addMessage(sessionId, errorMessage)
             throw e

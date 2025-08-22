@@ -1,6 +1,6 @@
 package com.localllm.localaichatapp.presentation.chat
 
-import com.localllm.localaichatapp.domain.model.AiModel
+import com.localllm.localaichatapp.domain.model.Model
 import com.localllm.localaichatapp.domain.model.ChatMessage
 import com.localllm.localaichatapp.domain.model.ChatSession
 
@@ -10,7 +10,10 @@ data class ChatUiState(
     val isLoading: Boolean = false,
     val isModelInitializing: Boolean = false,
     val isGenerating: Boolean = false,
-    val currentModel: AiModel? = null,
+    val isStreaming: Boolean = false,
+    val currentModel: Model? = null,
+    val modelName: String = "",
+    val sessionTitle: String = "",
     val inputText: String = "",
     val error: String? = null,
     val showModelPicker: Boolean = false

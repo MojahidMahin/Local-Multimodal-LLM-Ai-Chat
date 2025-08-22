@@ -42,7 +42,7 @@ class ModelManagementViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         
         viewModelScope.launch {
-            manageModelsUseCase.getAvailableModels()
+            manageModelsUseCase.getAllModels()
                 .catch { throwable ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -68,15 +68,24 @@ class ModelManagementViewModel @Inject constructor(
                     error = null
                 )
                 
-                manageModelsUseCase.downloadModel(modelId)
-                    .onEach { progress ->
+                val result = manageModelsUseCase.downloadModel(modelId) { progress ->
+                    val updatedDownloading = _uiState.value.downloadingModels.toMutableMap()
+                    updatedDownloading[modelId] = progress
+                    _uiState.value = _uiState.value.copy(
+                        downloadingModels = updatedDownloading
+                    )
+                }
+                
+                result.fold(
+                    onSuccess = {
+                        // Download completed successfully
                         val updatedDownloading = _uiState.value.downloadingModels.toMutableMap()
-                        updatedDownloading[modelId] = progress
+                        updatedDownloading.remove(modelId)
                         _uiState.value = _uiState.value.copy(
                             downloadingModels = updatedDownloading
                         )
-                    }
-                    .catch { throwable ->
+                    },
+                    onFailure = { throwable ->
                         val updatedDownloading = _uiState.value.downloadingModels.toMutableMap()
                         updatedDownloading.remove(modelId)
                         _uiState.value = _uiState.value.copy(
@@ -84,13 +93,6 @@ class ModelManagementViewModel @Inject constructor(
                             error = "Download failed: ${throwable.message}"
                         )
                     }
-                    .launchIn(this)
-                    
-                // Remove from downloading list when complete
-                val updatedDownloading = _uiState.value.downloadingModels.toMutableMap()
-                updatedDownloading.remove(modelId)
-                _uiState.value = _uiState.value.copy(
-                    downloadingModels = updatedDownloading
                 )
                 
             } catch (e: Exception) {
@@ -107,7 +109,7 @@ class ModelManagementViewModel @Inject constructor(
     private fun deleteModel(modelId: String) {
         viewModelScope.launch {
             try {
-                manageModelsUseCase.deleteModel(modelId).getOrThrow()
+                manageModelsUseCase.deleteModel(modelId)
                 _uiState.value = _uiState.value.copy(error = null)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -123,10 +125,7 @@ class ModelManagementViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(error = null)
                 
                 if (!manageModelsUseCase.isModelReady(modelId)) {
-                    manageModelsUseCase.initializeModel(
-                        modelId = modelId,
-                        config = ModelConfiguration()
-                    ).getOrThrow()
+                    manageModelsUseCase.initializeModel(modelId).getOrThrow()
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -136,7 +135,7 @@ class ModelManagementViewModel @Inject constructor(
         }
     }
     
-    private fun showDeleteConfirmation(model: com.localllm.localaichatapp.domain.model.AiModel) {
+    private fun showDeleteConfirmation(model: com.localllm.localaichatapp.domain.model.Model) {
         _uiState.value = _uiState.value.copy(
             selectedModelForDeletion = model,
             showDeleteConfirmation = true

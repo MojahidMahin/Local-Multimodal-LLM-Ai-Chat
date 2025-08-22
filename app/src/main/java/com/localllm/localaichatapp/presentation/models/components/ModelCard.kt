@@ -15,12 +15,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.localllm.localaichatapp.domain.model.AiModel
-import com.localllm.localaichatapp.domain.model.ModelFeature
+import com.localllm.localaichatapp.domain.model.Model
+import com.localllm.localaichatapp.domain.model.TaskType
 
 @Composable
 fun ModelCard(
-    model: AiModel,
+    model: Model,
     downloadProgress: Float?,
     onDownload: () -> Unit,
     onInitialize: () -> Unit,
@@ -53,7 +53,7 @@ fun ModelCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = formatFileSize(model.modelSize),
+                        text = formatFileSize(model.size),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
@@ -61,7 +61,7 @@ fun ModelCard(
                 
                 ModelStatusChip(
                     isDownloaded = model.isDownloaded,
-                    isInitialized = model.isInitialized,
+                    isInitialized = model.isAvailable,
                     isDownloading = downloadProgress != null
                 )
             }
@@ -75,18 +75,18 @@ fun ModelCard(
                 overflow = TextOverflow.Ellipsis
             )
             
-            // Features
-            if (model.supportedFeatures.isNotEmpty()) {
+            // Tasks
+            if (model.supportedTasks.isNotEmpty()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    model.supportedFeatures.take(3).forEach { feature ->
-                        FeatureChip(feature = feature)
+                    model.supportedTasks.take(3).forEach { task ->
+                        TaskChip(task = task)
                     }
-                    if (model.supportedFeatures.size > 3) {
+                    if (model.supportedTasks.size > 3) {
                         Text(
-                            text = "+${model.supportedFeatures.size - 3}",
+                            text = "+${model.supportedTasks.size - 3}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             modifier = Modifier.align(Alignment.CenterVertically)
@@ -157,7 +157,7 @@ fun ModelCard(
                         }
                     }
                     
-                    !model.isInitialized -> {
+                    !model.isAvailable -> {
                         // Downloaded but not initialized
                         Button(
                             onClick = onInitialize,
@@ -235,14 +235,14 @@ private fun ModelStatusChip(
 }
 
 @Composable
-private fun FeatureChip(
-    feature: ModelFeature
+private fun TaskChip(
+    task: TaskType
 ) {
-    val text = when (feature) {
-        ModelFeature.TEXT_GENERATION -> "Text"
-        ModelFeature.IMAGE_UNDERSTANDING -> "Images"
-        ModelFeature.AUDIO_INPUT -> "Audio"
-        ModelFeature.STREAMING_RESPONSE -> "Streaming"
+    val text = when (task) {
+        TaskType.CHAT -> "Chat"
+        TaskType.ASK_IMAGE -> "Images"
+        TaskType.ASK_AUDIO -> "Audio"
+        TaskType.PROMPT_LAB -> "Prompts"
     }
     
     Surface(
@@ -279,15 +279,15 @@ private fun PreviewModelCard() {
         ) {
             // Not downloaded model
             ModelCard(
-                model = AiModel(
+                model = Model(
                     id = "gemma-2b",
                     name = "Gemma 2B",
+                    displayName = "Gemma 2B",
                     description = "Small and efficient model for basic conversational tasks",
-                    modelSize = 1_500_000_000L,
-                    supportedFeatures = setOf(
-                        ModelFeature.TEXT_GENERATION,
-                        ModelFeature.STREAMING_RESPONSE
-                    )
+                    author = "Google",
+                    size = 1_500_000_000L,
+                    downloadUrl = "https://example.com/gemma-2b",
+                    supportedTasks = listOf(TaskType.CHAT, TaskType.PROMPT_LAB)
                 ),
                 downloadProgress = null,
                 onDownload = {},
@@ -297,16 +297,15 @@ private fun PreviewModelCard() {
             
             // Downloading model
             ModelCard(
-                model = AiModel(
+                model = Model(
                     id = "gemma-7b",
                     name = "Gemma 7B",
+                    displayName = "Gemma 7B",
                     description = "Larger model with better performance and image understanding",
-                    modelSize = 4_200_000_000L,
-                    supportedFeatures = setOf(
-                        ModelFeature.TEXT_GENERATION,
-                        ModelFeature.IMAGE_UNDERSTANDING,
-                        ModelFeature.STREAMING_RESPONSE
-                    )
+                    author = "Google",
+                    size = 4_200_000_000L,
+                    downloadUrl = "https://example.com/gemma-7b",
+                    supportedTasks = listOf(TaskType.CHAT, TaskType.ASK_IMAGE, TaskType.PROMPT_LAB)
                 ),
                 downloadProgress = 0.65f,
                 onDownload = {},
@@ -316,17 +315,16 @@ private fun PreviewModelCard() {
             
             // Ready model
             ModelCard(
-                model = AiModel(
+                model = Model(
                     id = "phi-3-mini",
                     name = "Phi-3 Mini",
+                    displayName = "Phi-3 Mini",
                     description = "Microsoft's efficient small model",
+                    author = "Microsoft",
+                    size = 2_100_000_000L,
+                    downloadUrl = "https://example.com/phi-3-mini",
                     isDownloaded = true,
-                    isInitialized = true,
-                    modelSize = 2_100_000_000L,
-                    supportedFeatures = setOf(
-                        ModelFeature.TEXT_GENERATION,
-                        ModelFeature.STREAMING_RESPONSE
-                    )
+                    supportedTasks = listOf(TaskType.CHAT, TaskType.PROMPT_LAB)
                 ),
                 downloadProgress = null,
                 onDownload = {},

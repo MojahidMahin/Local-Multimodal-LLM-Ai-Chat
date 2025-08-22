@@ -1,6 +1,7 @@
 package com.localllm.localaichatapp.di
 
 import android.content.Context
+import com.google.gson.Gson
 import com.localllm.localaichatapp.data.remote.ModelApiService
 import com.localllm.localaichatapp.data.remote.ModelDownloadManager
 import dagger.Module
@@ -26,5 +27,17 @@ object NetworkModule {
         @ApplicationContext context: Context
     ): ModelDownloadManager {
         return ModelDownloadManager(context)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideGson(): Gson {
+        return Gson()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideApplicationContext(@ApplicationContext context: Context): Context {
+        return context
     }
 }

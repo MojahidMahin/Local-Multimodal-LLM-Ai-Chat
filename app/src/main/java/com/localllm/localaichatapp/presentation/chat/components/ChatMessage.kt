@@ -21,30 +21,19 @@ fun ChatMessageItem(
     modifier: Modifier = Modifier
 ) {
     when (message) {
-        is TextMessage -> TextMessageBubble(message = message, modifier = modifier)
-        is LoadingMessage -> LoadingMessageBubble(modifier = modifier)
-        is ErrorMessage -> ErrorMessageBubble(message = message, modifier = modifier)
-        is ImageMessage -> ImageMessageBubble(message = message, modifier = modifier)
+        is ChatMessage.User -> UserMessageBubble(message = message, modifier = modifier)
+        is ChatMessage.Assistant -> AssistantMessageBubble(message = message, modifier = modifier)
     }
 }
 
 @Composable
-private fun TextMessageBubble(
-    message: TextMessage,
+private fun UserMessageBubble(
+    message: ChatMessage.User,
     modifier: Modifier = Modifier
 ) {
-    val isUser = message.sender == ChatSender.USER
-    val alignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
-    val backgroundColor = if (isUser) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
-    val textColor = if (isUser) {
-        MaterialTheme.colorScheme.onPrimary
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
+    val alignment = Alignment.CenterEnd
+    val backgroundColor = MaterialTheme.colorScheme.primary
+    val textColor = MaterialTheme.colorScheme.onPrimary
     
     Box(
         modifier = modifier
@@ -53,7 +42,7 @@ private fun TextMessageBubble(
         contentAlignment = alignment
     ) {
         Column(
-            horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
+            horizontalAlignment = Alignment.End
         ) {
             Box(
                 modifier = Modifier
@@ -62,8 +51,60 @@ private fun TextMessageBubble(
                         RoundedCornerShape(
                             topStart = 16.dp,
                             topEnd = 16.dp,
-                            bottomStart = if (isUser) 16.dp else 4.dp,
-                            bottomEnd = if (isUser) 4.dp else 16.dp
+                            bottomStart = 16.dp,
+                            bottomEnd = 4.dp
+                        )
+                    )
+                    .background(backgroundColor)
+                    .padding(12.dp)
+            ) {
+                Text(
+                    text = message.content,
+                    color = textColor,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(2.dp))
+            
+            Text(
+                text = formatTimestamp(message.timestamp),
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AssistantMessageBubble(
+    message: ChatMessage.Assistant,
+    modifier: Modifier = Modifier
+) {
+    val alignment = Alignment.CenterStart
+    val backgroundColor = MaterialTheme.colorScheme.surface
+    val textColor = MaterialTheme.colorScheme.onSurface
+    
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        contentAlignment = alignment
+    ) {
+        Column(
+            horizontalAlignment = Alignment.Start
+        ) {
+            Box(
+                modifier = Modifier
+                    .widthIn(max = 280.dp)
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = 16.dp,
+                            topEnd = 16.dp,
+                            bottomStart = 4.dp,
+                            bottomEnd = 16.dp
                         )
                     )
                     .background(backgroundColor)
@@ -77,7 +118,8 @@ private fun TextMessageBubble(
                         lineHeight = 20.sp
                     )
                     
-                    if (message.isStreaming) {
+                    // Show typing indicator if content is empty (still streaming)
+                    if (message.content.isEmpty()) {
                         Spacer(modifier = Modifier.height(4.dp))
                         TypingIndicator()
                     }
@@ -96,122 +138,6 @@ private fun TextMessageBubble(
     }
 }
 
-@Composable
-private fun LoadingMessageBubble(
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp
-                )
-                Text(
-                    text = "Thinking...",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ErrorMessageBubble(
-    message: ErrorMessage,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.errorContainer)
-                .padding(12.dp)
-        ) {
-            Text(
-                text = message.error,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                fontWeight = FontWeight.Medium
-            )
-        }
-    }
-}
-
-@Composable
-private fun ImageMessageBubble(
-    message: ImageMessage,
-    modifier: Modifier = Modifier
-) {
-    val isUser = message.sender == ChatSender.USER
-    val alignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
-    
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        contentAlignment = alignment
-    ) {
-        Column(
-            horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
-        ) {
-            // Image placeholder - replace with actual image loading
-            Box(
-                modifier = Modifier
-                    .size(200.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surface),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "📷 Image",
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-            }
-            
-            message.caption?.let { caption ->
-                if (caption.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = caption,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                        modifier = Modifier.padding(horizontal = 4.dp)
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(2.dp))
-            
-            Text(
-                text = formatTimestamp(message.timestamp),
-                fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                modifier = Modifier.padding(horizontal = 4.dp)
-            )
-        }
-    }
-}
 
 @Composable
 private fun TypingIndicator() {
@@ -255,23 +181,32 @@ private fun formatTimestamp(timestamp: Long): String {
 
 @Preview
 @Composable
-private fun PreviewTextMessage() {
+private fun PreviewChatMessages() {
     MaterialTheme {
         Column {
             ChatMessageItem(
-                message = TextMessage(
+                message = ChatMessage.Assistant(
+                    id = "1",
+                    sessionId = "session1",
                     content = "Hello! How can I help you today?",
-                    sender = ChatSender.AI
+                    timestamp = System.currentTimeMillis()
                 )
             )
             ChatMessageItem(
-                message = TextMessage(
+                message = ChatMessage.User(
+                    id = "2",
+                    sessionId = "session1",
                     content = "I need help with Android development",
-                    sender = ChatSender.USER
+                    timestamp = System.currentTimeMillis()
                 )
             )
             ChatMessageItem(
-                message = LoadingMessage()
+                message = ChatMessage.Assistant(
+                    id = "3",
+                    sessionId = "session1",
+                    content = "", // Empty content shows typing indicator
+                    timestamp = System.currentTimeMillis()
+                )
             )
         }
     }

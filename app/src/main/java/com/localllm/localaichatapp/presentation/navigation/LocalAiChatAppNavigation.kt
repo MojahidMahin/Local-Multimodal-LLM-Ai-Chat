@@ -76,15 +76,7 @@ fun LocalAiChatAppNavigation(
         // Model Manager screen
         composable(Screen.ModelManager.route) {
             ModelManagerScreen(
-                onBackClick = { navController.navigateUp() },
-                onModelSelected = { modelId, taskType ->
-                    when (taskType) {
-                        "CHAT" -> navController.navigate(Screen.Chat.createRoute(modelId))
-                        "ASK_IMAGE" -> navController.navigate(Screen.AskImage.createRoute(modelId))
-                        "ASK_AUDIO" -> navController.navigate(Screen.AskAudio.createRoute(modelId))
-                        "PROMPT_LAB" -> navController.navigate(Screen.PromptLab.createRoute(modelId))
-                    }
-                }
+                onNavigateBack = { navController.navigateUp() }
             )
         }
         
@@ -163,7 +155,7 @@ fun LocalAiChatAppNavigation(
         // Settings screen
         composable(Screen.Settings.route) {
             SettingsScreen(
-                onBackClick = { navController.navigateUp() }
+                onNavigateBack = { navController.navigateUp() }
             )
         }
     }

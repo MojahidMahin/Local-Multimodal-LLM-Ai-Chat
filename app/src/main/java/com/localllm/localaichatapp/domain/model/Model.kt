@@ -12,6 +12,8 @@ data class Model(
     val isDownloaded: Boolean = false,
     val isDownloading: Boolean = false,
     val downloadProgress: Float = 0f,
+    val status: ModelStatus = ModelStatus.AVAILABLE,
+    val isPrimary: Boolean = false,
     val supportedTasks: List<TaskType> = emptyList(),
     val parameters: ModelParameters? = null,
     val createdAt: Long = System.currentTimeMillis(),

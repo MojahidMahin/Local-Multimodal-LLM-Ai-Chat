@@ -130,8 +130,8 @@ dependencies {
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
     
-    // AI Edge (For local ML)
-    implementation(libs.google.ai.edge)
+    // AI Edge (For local ML) - Commented out until real implementation
+    // implementation(libs.google.ai.edge)
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

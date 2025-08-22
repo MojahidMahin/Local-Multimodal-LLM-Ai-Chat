@@ -40,6 +40,9 @@ interface BenchmarkDao {
     @Query("DELETE FROM benchmarks WHERE timestamp < :cutoffTime")
     suspend fun deleteOldBenchmarks(cutoffTime: Long)
     
+    @Query("DELETE FROM benchmarks WHERE modelId = :modelId")
+    suspend fun deleteBenchmarksByModel(modelId: String)
+    
     @Query("DELETE FROM benchmarks")
     suspend fun deleteAllBenchmarks()
 }
