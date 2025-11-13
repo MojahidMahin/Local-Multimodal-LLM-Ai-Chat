@@ -104,13 +104,40 @@ The app works out of the box with mock AI implementations. For real AI processin
 
 Comprehensive documentation is available in the [`docs`](./docs) directory:
 
+### 📖 For Users
+
 | Document | Description |
 |----------|-------------|
-| **[📋 Implementation Guide](./docs/IMPLEMENTATION_DOCS.md)** | Complete technical implementation details |
+| **[🚀 Installation Guide](./docs/INSTALLATION.md)** | Step-by-step installation and setup instructions |
+| **[📱 User Guide](./docs/USER_GUIDE.md)** | Complete guide to using all app features |
+| **[❓ FAQ](./docs/FAQ.md)** | Frequently asked questions and answers |
+| **[🔧 Troubleshooting](./docs/TROUBLESHOOTING.md)** | Solutions to common problems and issues |
+
+### 👨‍💻 For Developers
+
+| Document | Description |
+|----------|-------------|
+| **[🛠️ Development Setup](./docs/DEVELOPMENT_SETUP.md)** | Setting up your development environment |
+| **[🤝 Contributing Guide](./docs/CONTRIBUTING.md)** | How to contribute to the project |
+| **[✅ Testing Guide](./docs/TESTING.md)** | Writing and running tests |
+| **[📝 Code Style Guide](./docs/CODE_STYLE.md)** | Coding standards and conventions |
+
+### 📐 Technical Documentation
+
+| Document | Description |
+|----------|-------------|
 | **[🏗️ Architecture](./docs/ARCHITECTURE.md)** | System architecture and design patterns |
 | **[💾 Database Schema](./docs/DATABASE_SCHEMA.md)** | Database structure and relationships |
 | **[🔌 API Reference](./docs/API_REFERENCE.md)** | Repository interfaces and usage examples |
+| **[📋 Implementation Guide](./docs/IMPLEMENTATION_DOCS.md)** | Complete technical implementation details |
 | **[✅ Phase 1 Completion](./docs/PHASE_1_COMPLETION_SUMMARY.md)** | Current implementation status |
+
+### 🎯 Quick Links
+
+- **New to the project?** Start with the [User Guide](./docs/USER_GUIDE.md)
+- **Want to contribute?** Check out the [Contributing Guide](./docs/CONTRIBUTING.md)
+- **Setting up dev environment?** See [Development Setup](./docs/DEVELOPMENT_SETUP.md)
+- **Having issues?** Visit [Troubleshooting](./docs/TROUBLESHOOTING.md) or [FAQ](./docs/FAQ.md)
 
 ## 🛠️ Technology Stack
 
