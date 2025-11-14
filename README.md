@@ -2,11 +2,13 @@
 
 > **Explore, Experience, and Evaluate the Future of On-Device Generative AI**
 
-A comprehensive Android application featuring Google AI Edge Gallery capabilities with local AI processing, multi-modal interactions, and performance monitoring - all running entirely on your device.
+A comprehensive **multi-platform application** (Android & Web) featuring Google AI Edge Gallery capabilities with local AI processing, multi-modal interactions, workflow automation, and performance monitoring - all running entirely on your device.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://android.com)
+[![Web](https://img.shields.io/badge/Platform-Web-blue.svg)](https://www.w3.org/)
 [![Kotlin](https://img.shields.io/badge/Language-Kotlin-purple.svg)](https://kotlinlang.org)
+[![TypeScript](https://img.shields.io/badge/Language-TypeScript-blue.svg)](https://www.typescriptlang.org)
 [![Architecture](https://img.shields.io/badge/Architecture-Clean%20MVVM-orange.svg)](#architecture)
 
 ## 📱 Screenshots & Demo
@@ -24,6 +26,8 @@ A comprehensive Android application featuring Google AI Edge Gallery capabilitie
 ### 🚀 **Advanced Features**
 - **📱 100% Offline** - All AI processing happens locally on your device
 - **🔄 Model Management** - Download, manage, and switch between AI models
+- **⚙️ Workflow Automation** - Zapier-inspired automation system with triggers, actions, and conditions
+- **🌐 Multi-Platform** - Available on both Android and Web with consistent experience
 - **📊 Performance Insights** - Real-time benchmarking (TTFT, decode speed, latency)
 - **📝 Prompt Templates** - 10+ built-in templates across 5 categories
 - **🔍 Smart Search** - Find conversations across all your chat history
@@ -110,6 +114,7 @@ Comprehensive documentation is available in the [`docs`](./docs) directory:
 |----------|-------------|
 | **[🚀 Installation Guide](./docs/INSTALLATION.md)** | Step-by-step installation and setup instructions |
 | **[📱 User Guide](./docs/USER_GUIDE.md)** | Complete guide to using all app features |
+| **[🤖 Android Setup Guide](./docs/ANDROID_SETUP.md)** | Complete Android installation, requirements, and configuration |
 | **[❓ FAQ](./docs/FAQ.md)** | Frequently asked questions and answers |
 | **[🔧 Troubleshooting](./docs/TROUBLESHOOTING.md)** | Solutions to common problems and issues |
 
@@ -131,10 +136,16 @@ Comprehensive documentation is available in the [`docs`](./docs) directory:
 | **[🔌 API Reference](./docs/API_REFERENCE.md)** | Repository interfaces and usage examples |
 | **[📋 Implementation Guide](./docs/IMPLEMENTATION_DOCS.md)** | Complete technical implementation details |
 | **[✅ Phase 1 Completion](./docs/PHASE_1_COMPLETION_SUMMARY.md)** | Current implementation status |
+| **[🌐 Multi-Platform Architecture](./docs/MULTI_PLATFORM_ARCHITECTURE.md)** | Cross-platform design for Android and Web |
+| **[⚙️ Automation System](./docs/AUTOMATION_SYSTEM.md)** | Zapier-inspired workflow automation documentation |
+| **[📱 Android Device Compatibility](./docs/ANDROID_DEVICE_COMPATIBILITY.md)** | Detailed device compatibility matrix and requirements |
+| **[🚀 Web Deployment Guide](./docs/WEB_DEPLOYMENT_GUIDE.md)** | Guide for deploying the web version |
 
 ### 🎯 Quick Links
 
 - **New to the project?** Start with the [User Guide](./docs/USER_GUIDE.md)
+- **Installing on Android?** See the [Android Setup Guide](./docs/ANDROID_SETUP.md)
+- **Want to use the web version?** Check the [Web Deployment Guide](./docs/WEB_DEPLOYMENT_GUIDE.md)
 - **Want to contribute?** Check out the [Contributing Guide](./docs/CONTRIBUTING.md)
 - **Setting up dev environment?** See [Development Setup](./docs/DEVELOPMENT_SETUP.md)
 - **Having issues?** Visit [Troubleshooting](./docs/TROUBLESHOOTING.md) or [FAQ](./docs/FAQ.md)
